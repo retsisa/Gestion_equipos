@@ -1,0 +1,16 @@
+
+.panel-card {
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Evita que los botones internos disparen el clic del card */
+.panel-card button {
+    pointer-events: auto;
+}
+
+.panel-card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.2);
+}
+
