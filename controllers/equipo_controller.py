@@ -347,7 +347,7 @@ def mover_equipo(equipment_id):
     flash(f"Equipo movido del laboratorio {laboratorio_anterior.nombre} al {n_lab.nombre}", "success")
     return redirect(url_for('laboratorio.view_panel', panel_id=nuevo_lab))
 
-@equipo_bp.route('/equipo/reporte/generar_pdf', methods=['POST'])
+@equipo_bp.route('/reporte/generar_pdf', methods=['POST'])
 @login_required
 def generar_pdf():
     data = request.get_json()
@@ -359,6 +359,7 @@ def generar_pdf():
     pdf_file.seek(0)
 
     return send_file(pdf_file, as_attachment=True, download_name="reporte.pdf", mimetype='application/pdf')
+    #return redirect(url_for('laboratorio.dashboard'))
     
 @equipo_bp.route('/equipo/editor')
 @login_required
