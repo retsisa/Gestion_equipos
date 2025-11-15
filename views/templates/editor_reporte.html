@@ -1,45 +1,150 @@
-<!-- Editor de reportes -->
-<div class="mb-3">
-    <label for="editor" class="form-label">Editor de Reportes</label>
-    <textarea id="editor" name="contenido"></textarea>
-</div>
-
-<!-- Botón para generar PDF -->
-<button id="generarPDF" class="btn btn-primary">Generar PDF</button>
-
-<!-- CKEditor 5 Document Editor -->
-<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/document/ckeditor.js"></script>
-<script>
-    let editorInstance;
-
-    DocumentEditor
-        .create(document.querySelector('#editor'))
-        .then(editor => {
-            editorInstance = editor;
-        })
-        .catch(error => {
-            console.error(error);
+<!-- templates/reporte_editor.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Editor de Reporte</title>
+    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <script>
+        tinymce.init({
+            selector: '#contenido',
+            height: 500,
+            menubar: true,
+            plugins: 'advlist autolink lists link image charmap print preview anchor table',
+            toolbar: 'undo redo | formatselect | bold italic backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat'
         });
+    </script>
+</head>
+<body>
+    <h2>Editor de Reporte</h2>
+    <form action="{{ url_for('equipo.generar_pdf') }}" method="POST">
+        <textarea id="contenido" name="contenido"></textarea>
+        <br>
+        <button type="submit">Generar PDF</button>
+    </form>
+</body>
+</html>
 
-    document.getElementById('generarPDF').addEventListener('click', () => {
-        // Obtener contenido HTML del editor
-        const contenidoHTML = editorInstance.getData();
+<!--DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor de Reportes</title>
+    
+    <!-- TinyMCE desde CDN -->
+    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        .btn-guardar {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        .btn-guardar:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Editor de Reportes</h1>
+        
+        <form method="POST" action="{{ url_for('tu_ruta_guardar') }}">
+            <!-- Campo oculto para datos del equipo si lo necesitas -->
+            <input type="hidden" name="equipo_id" value="{{ equipo.id if equipo else '' }}">
+            
+            <!-- El textarea que se convertirá en editor -->
+            <textarea id="editor" name="contenido_reporte">
+                {{ contenido_existente if contenido_existente else '' }}
+            </textarea>
+            
+            <button type="submit" class="btn-guardar">💾 Guardar Reporte</button>
+        </form>
+    </div>
 
-        // Enviar al backend para generar PDF
-        fetch('/equipo/reporte/generar_pdf', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contenido: contenidoHTML })
-        })
-        .then(response => response.blob())
-        .then(blob => {
-            // Descargar PDF
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'reporte.pdf';
-            a.click();
-            window.URL.revokeObjectURL(url);
+    <script>
+        tinymce.init({
+            selector: '#editor',
+            height: 600,
+            menubar: true,
+            language: 'es',
+            
+            // Plugins para funcionalidad tipo Word
+            plugins: [
+                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                'insertdatetime', 'media', 'table', 'help', 'wordcount'
+            ],
+            
+            // Barra de herramientas tipo Word
+            toolbar: 'undo redo | blocks | bold italic underline strikethrough | ' +
+                     'alignleft aligncenter alignright alignjustify | ' +
+                     'bullist numlist outdent indent | forecolor backcolor | ' +
+                     'table link image | removeformat | help',
+            
+            // Opciones adicionales
+            content_style: 'body { font-family: Arial, sans-serif; font-size: 14pt; }',
+            
+            // Para insertar datos dinámicos
+            setup: function(editor) {
+                // Botón personalizado para insertar campos dinámicos
+                editor.ui.registry.addMenuButton('insertarCampo', {
+                    text: '📋 Insertar Campo',
+                    fetch: function(callback) {
+                        var items = [
+                            {
+                                type: 'menuitem',
+                                text: 'Nombre del Equipo',
+                                onAction: function() {
+                                    editor.insertContent('{{nombre_equipo}}');
+                                }
+                            },
+                            {
+                                type: 'menuitem',
+                                text: 'Ubicación',
+                                onAction: function() {
+                                    editor.insertContent('{{ubicacion}}');
+                                }
+                            },
+                            {
+                                type: 'menuitem',
+                                text: 'Estado',
+                                onAction: function() {
+                                    editor.insertContent('{{estado}}');
+                                }
+                            }
+                        ];
+                        callback(items);
+                    }
+                });
+            },
+            
+            // Agregar el botón a la barra
+            toolbar: 'undo redo | blocks | bold italic underline | insertarCampo | ' +
+                     'alignleft aligncenter alignright | bullist numlist | table link'
         });
-    });
-</script>
+    </script>
+</body>
+</html-->
