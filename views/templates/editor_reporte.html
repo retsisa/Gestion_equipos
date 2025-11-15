@@ -1,0 +1,45 @@
+<!-- Editor de reportes -->
+<div class="mb-3">
+    <label for="editor" class="form-label">Editor de Reportes</label>
+    <textarea id="editor" name="contenido"></textarea>
+</div>
+
+<!-- Botón para generar PDF -->
+<button id="generarPDF" class="btn btn-primary">Generar PDF</button>
+
+<!-- CKEditor 5 Document Editor -->
+<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/document/ckeditor.js"></script>
+<script>
+    let editorInstance;
+
+    DocumentEditor
+        .create(document.querySelector('#editor'))
+        .then(editor => {
+            editorInstance = editor;
+        })
+        .catch(error => {
+            console.error(error);
+        });
+
+    document.getElementById('generarPDF').addEventListener('click', () => {
+        // Obtener contenido HTML del editor
+        const contenidoHTML = editorInstance.getData();
+
+        // Enviar al backend para generar PDF
+        fetch('/equipo/reporte/generar_pdf', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contenido: contenidoHTML })
+        })
+        .then(response => response.blob())
+        .then(blob => {
+            // Descargar PDF
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'reporte.pdf';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        });
+    });
+</script>

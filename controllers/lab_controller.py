@@ -17,8 +17,9 @@ def dashboard():
 @login_required
 def view_panel(panel_id):
     panel = Laboratorios.query.get_or_404(panel_id)
+    panels = Laboratorios.query.all()
     usuarios=Usuarios.query.all()
-    return render_template('panel.html', panel=panel, usuarios=usuarios)
+    return render_template('panel.html', panel=panel, usuarios=usuarios, panels=panels)
 
 @Lab_bp.route('/laboratorio/create', methods=['POST'])
 @login_required

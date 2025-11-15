@@ -49,3 +49,10 @@ function generateQR(equipmentId) {
         });
 }
   
+function openMoveModal(equipmentId) {
+    const form = document.getElementById("moveEquipmentForm");
+    form.action = "/equipo/" + equipmentId + "/mover";
+
+    const modal = new bootstrap.Modal(document.getElementById("MoverPanelModal"));
+    modal.show();
+}

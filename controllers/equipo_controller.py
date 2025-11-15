@@ -7,6 +7,11 @@ from utils.decorators import role_required
 import qrcode
 from io import BytesIO
 import base64
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from PIL import Image
+from reportlab.pdfbase.pdfmetrics import stringWidth
+from weasyprint import HTML
 
 equipo_bp = Blueprint('equipo', __name__,template_folder='../views/templates')
 
@@ -196,3 +201,167 @@ def guardar_qr(equipment_id):
         as_attachment=True,
         download_name=f"qr_{equipment.nombre}.png"
     )
+    
+def generar_qr_base64(texto):
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=6,
+        border=2,
+    )
+    qr.add_data(texto)
+    qr.make(fit=True)
+
+    img = qr.make_image(fill='black', back_color='white')
+
+    buffer = BytesIO()
+    img.save(buffer, format="PNG")
+    buffer.seek(0)
+
+    return base64.b64encode(buffer.getvalue()).decode('utf-8')
+
+def wrap_text(text, max_width, font_name="Helvetica", font_size=11):
+    palabras = text.split(" ")
+    lineas = []
+    linea_actual = ""
+
+    for palabra in palabras:
+        prueba = linea_actual + " " + palabra if linea_actual else palabra
+        if stringWidth(prueba, font_name, font_size) <= max_width:
+            linea_actual = prueba
+        else:
+            lineas.append(linea_actual)
+            linea_actual = palabra
+
+    if linea_actual:
+        lineas.append(linea_actual)
+
+    return lineas
+
+
+@equipo_bp.route('/equipo/reporte/pdf')
+@login_required
+@role_required('admin', 'profesor', 'tecnico')
+def generar_reporte_pdf():
+    buffer = BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=letter)
+    y = 720
+
+    pdf.setFont("Helvetica-Bold", 15)
+    pdf.drawString(50, 770, "Reporte de Equipos")
+    pdf.setFont("Helvetica", 11)
+    from models.Lab import Laboratorios
+    labs=Laboratorios.query.all()
+    for lab in labs:
+        y += 50
+        equipos = Equipos.query.filter_by(laboratorio_id=lab.id).all()
+        if not equipos:
+            pdf.drawString(70, y, "No hay equipos registrados.")
+            y -= 30
+            continue
+        y -= 30
+        pdf.setFont("Helvetica-Bold", 12)
+        pdf.drawString(210, y, f"{lab.nombre}")
+        pdf.setFont("Helvetica", 11)
+        y -= 20
+        for eq in equipos:
+            usuario = "Sin usuario"
+            if eq.usuario_id:
+                usuario_data = Usuarios.query.get(eq.usuario_id)
+                usuario = usuario_data.username if usuario_data else "Sin usuario"
+
+            '''qr_base64 = generar_qr_base64(
+                f"ID: {eq.id}\nNombre: {eq.nombre}\nUbicación: {eq.ubicacion}\nUsuario: {usuario}"
+            )
+
+            img_data = base64.b64decode(qr_base64)
+            qr_file = BytesIO(img_data)
+
+            img = Image.open(qr_file)'''
+
+            pdf.drawString(50, y, f"ID: {eq.id}")
+            nombre_text = f"Nombre: {eq.nombre}"
+            lineas_nombre = wrap_text(nombre_text, max_width=120)
+
+            for linea in lineas_nombre:
+                pdf.drawString(90, y, linea)
+                y -= 12
+
+            pdf.drawString(190, y, f"Estado: {eq.estado}")
+            ubicacion_text = f"Ubicación: {eq.ubicacion}"
+            lineas_ubicacion = wrap_text(ubicacion_text, max_width=250)
+
+            for linea in lineas_ubicacion:
+                pdf.drawString(290, y, linea)
+                y -= 12
+
+            pdf.drawString(50, y-15, f"Usuario: {usuario}")
+            #pdf.drawInlineImage(img, 500, y - 40, 50, 50)
+
+            y -= 70
+            if y < 80:
+                pdf.showPage()
+                pdf.setFont("Helvetica", 11)
+                y = 760
+
+    pdf.save()
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name="reporte_equipos.pdf",
+        mimetype="application/pdf"
+    )
+    
+@equipo_bp.route('/equipo/<int:equipment_id>/mover', methods=['POST'])
+@login_required
+@role_required('admin', 'profesor', 'tecnico')
+def mover_equipo(equipment_id):
+    equipment = Equipos.query.get_or_404(equipment_id)
+
+    nuevo_lab = request.form.get('nuevo_lab')
+
+    if not nuevo_lab:
+        flash("Debes seleccionar un laboratorio destino.", "warning")
+        return redirect(url_for('laboratorio.view_panel', panel_id=equipment.laboratorio_id))
+
+    try:
+        nuevo_lab = int(nuevo_lab)
+    except:
+        flash("ID de laboratorio inválido", "danger")
+        return redirect(url_for('laboratorio.view_panel', panel_id=equipment.laboratorio_id))
+
+    from models.Lab import Laboratorios
+    if not Laboratorios.query.get(nuevo_lab):
+        flash("El laboratorio de destino no existe.", "danger")
+        return redirect(url_for('laboratorio.view_panel', panel_id=equipment.laboratorio_id))
+
+    laboratorio_anterior = Laboratorios.query.get_or_404(equipment.laboratorio_id)
+    n_lab=Laboratorios.query.get_or_404(nuevo_lab)
+    equipment.laboratorio_id = nuevo_lab
+    if equipment.estado == "disponible":
+        equipment.ubicacion=n_lab.nombre
+    db.session.commit()
+
+    flash(f"Equipo movido del laboratorio {laboratorio_anterior.nombre} al {n_lab.nombre}", "success")
+    return redirect(url_for('laboratorio.view_panel', panel_id=nuevo_lab))
+
+@equipo_bp.route('/equipo/reporte/generar_pdf', methods=['POST'])
+@login_required
+def generar_pdf():
+    data = request.get_json()
+    contenido_html = data.get('contenido', '')
+
+    # Generar PDF
+    pdf_file = BytesIO()
+    HTML(string=contenido_html).write_pdf(pdf_file)
+    pdf_file.seek(0)
+
+    return send_file(pdf_file, as_attachment=True, download_name="reporte.pdf", mimetype='application/pdf')
+    
+@equipo_bp.route('/equipo/editor')
+@login_required
+@role_required('admin', 'profesor', 'tecnico')
+def editor_reporte():
+    return render_template("editor_reporte.html")
