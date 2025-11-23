@@ -1,13 +1,13 @@
 from models import db
-from datetime import datetime
 
 class Equipos(db.Model):
     __tablename__ = 'equipos'
     
     id = db.Column(db.Integer, primary_key=True)
-    nombre = db.Column(db.String(100), nullable=False)
+    nro = db.Column(db.String(100), nullable=False)
     estado = db.Column(db.String(20), nullable=False, default='disponible')
     ubicacion = db.Column(db.Text, nullable=False)
+    sistema_operativo = db.Column(db.String(100), nullable=True)
     laboratorio_id = db.Column(db.Integer, db.ForeignKey('laboratorios.id'), nullable=False)
     
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=True)
@@ -15,7 +15,14 @@ class Equipos(db.Model):
     usuario = db.relationship('Usuarios', backref='equipos_asignados', lazy=True) 
     
     # Estados permitidos: disponible, usado, dañado
-    VALID_STATUSES = ['disponible', 'usado', 'dañado']
+    VALID_STATUSES = ['disponible', 'usado', 'mantenimiento', 'baja']
+    
+    equip_comp = db.relationship(
+        'Equip_comp',
+        backref='equipo',
+        lazy=True,
+        cascade='all, delete'
+    )
 
 '''from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime

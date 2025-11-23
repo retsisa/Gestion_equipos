@@ -7,6 +7,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head_extra %}{% endblock %}
 </head>
 <body>
     {% if current_user.is_authenticated %}
@@ -20,6 +21,14 @@
                 {% if current_user.is_authenticated and current_user.rol == 'admin' %}
                 <a class="btn btn-outline-light btn-sm me-3" href="{{ url_for('usuarios.dashboard_usuarios') }}">
                     <i class="fas fa-users-cog"></i> Usuarios
+                </a>
+                {% endif %}
+            </div>
+
+            <div class="d-flex align-items-center">
+                {% if current_user.rol in ['admin', 'profesor', 'tecnico'] %}
+                <a class="btn btn-outline-light btn-sm me-3" href="{{ url_for('eq_comp.dashboard') }}">
+                    <i class="fas fa-cogs"></i> Componentes de Equipos
                 </a>
                 {% endif %}
             </div>
@@ -41,6 +50,11 @@
             </div-->
 
             <div class="navbar-nav ms-auto">
+                {% if current_user.is_authenticated and current_user.rol in ['admin','profesor'] %}
+                <a class="btn btn-outline-light btn-sm me-3" onclick="generateQRPag()">
+                    <i class="fas fa-qrcode"></i> QR pagina
+                </a>
+                {% endif %}
                 <span class="navbar-text me-3">
                     <i class="fas fa-user"></i> {{ current_user.username }}
                 </span>
@@ -52,20 +66,23 @@
     </nav>
     {% endif %}
 
-    <div class="container mt-4">
+    {% block content_wrapper %}
+    <div class="container mt-4">      
         {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-                {% endfor %}
+        {% if messages %}
+          {% for category, message in messages %}
+            {% if category != 'login' %}
+              <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
             {% endif %}
-        {% endwith %}
-
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
         {% block content %}{% endblock %}
     </div>
+    {% endblock %}
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     {% block scripts %}{% endblock %}

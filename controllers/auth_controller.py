@@ -18,7 +18,7 @@ def login():
             login_user(user)
             return redirect(url_for('laboratorio.dashboard'))
         else:
-            flash('Usuario o contraseña incorrectos', 'danger')
+            flash('Usuario o contraseña incorrectos', 'login')
     
     return render_template('login.html')
 

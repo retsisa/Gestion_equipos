@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Gestion de Componentes{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        {% if current_user.rol in ['admin', 'profesor', 'tecnico'] %}
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createCompModal">
+            <i class="fas fa-plus"></i> Nuevos Componentes
+        </button>
+        {% endif %}
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Ram</th>
+                <th>Disco Duro</th>
+                <th>Modelo</th>
+                <th>Codigo del equipo</th>
+                <th>Nombre del equipo</th>
+                <th>Estado</th>
+                {% if current_user.rol in ['admin', 'profesor', 'tecnico'] %}
+                <th>Acciones</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for comp in comps %}
+            <tr>
+                <td><i class="fas fa-desktop"></i> {{ comp.cod_eq }}</td>
+                <td> {{ comp.ram }}</td>
+                <td> {{ comp.hd }}</td>
+                <td> {{ comp.modelo }}</td>
+                <td><i class="fas fa-folder-open"></i> {{ comp.equipos.id }}</td>
+                <td>
+                    <i class="fas fa-laptop-code"></i> {{ comp.equipos.nro }}
+                </td>                
+                
+                <td>
+                    {% if comp.equipos.estado == 'disponible' %}
+                        <span class="badge bg-success">Disponible</span>
+                    {% elif comp.equipos.estado == 'usado' %}
+                        <span class="badge bg-warning">En Uso</span>
+                    {% elif comp.equipos.estado == 'mantenimiento' %}
+                        <span class="badge bg-warning">Mantenimiento</span>
+                    {% else %}
+                        <span class="badge bg-danger">Baja</span>
+                    {% endif %}
+                </td>
+                {% if current_user.rol in ['admin', 'profesor', 'tecnico'] %}
+                <td>
+                    <button class="btn btn-sm btn-info" onclick="editComp({{ comp.cod_eq }})">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <form method="POST" action="{{ url_for('eq_comp.delete_comp', cod_eq=comp.cod_eq) }}" 
+                          onsubmit="return confirm('¿Eliminar este componente?')" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-danger">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </form>
+                    <button class="btn btn-sm btn-success" onclick="generateQR({{ comp.equipo_id }})">
+                        <i class="fas fa-qrcode"></i>
+                    </button>             
+                </td>
+                {% endif %}
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="8" class="text-center text-muted">No hay componentes registrados</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal Crear Equipo -->
+<div class="modal fade" id="createCompModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Crear Nuevo Componentes</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('eq_comp.create_comp') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="ram" class="form-label">Ram</label>
+                        <input type="text" class="form-control" id="ram" name="ram" placeholder="2GB" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="hd" class="form-label">Disco Duro</label>
+                        <input type="text" class="form-control" id="hd" name="hd" placeholder="SSD" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modelo" class="form-label">Modelo</label>
+                        <input type="text" class="form-control" id="modelo" name="modelo" placeholder="Dell" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="eq_id" class="form-label">Equipo</label>
+                        <select class="form-control" id="eq_id" name="eq_id" required>
+                            {% for equipo in equipos %}
+                                <option value="{{equipo.id}}" {% if equipo.equipo_id %} disabled {% endif %}>
+                                    {{ equipo.nro }} {% if equipo.equipo_id %}(Ya tiene componente){% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>                      
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Crear Componentes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Editar Equipo -->
+<div class="modal fade" id="editCompModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Componentes</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="editCompForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="edit_ram" class="form-label">Ram</label>
+                        <input type="text" class="form-control" id="edit_ram" name="ram" placeholder="2GB" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_HD" class="form-label">Disco Duro</label>
+                        <input type="text" class="form-control" id="edit_HD" name="hd" placeholder="SSD" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_modelo" class="form-label">Modelo</label>
+                        <input type="text" class="form-control" id="edit_modelo" name="modelo" placeholder="Dell" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_eq_id" class="form-label">Equipo</label>
+                        <select class="form-control" id="edit_eq_id" name="eq_id" required>
+                            {% for equipo in equipos %}
+                                <option value="{{equipo.id}}">{{equipo.nro}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Editar Componentes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Generar QR -->
+<div class="modal fade" id="GenerarQRModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="qrMensaje"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <label for="name" class="form-label" id="qrFilename"></label>
+                <center>
+                <div class="mb-3">
+                    <img id="qrImagen" src="" alt="QR generado" class="img-thumbnail" width="250">
+                </div>
+                </center>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <a id="btnGuardarQR" href="#" class="btn btn-primary">Guardar QR</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/scripts.js') }}">    </script>
+{% endblock %}

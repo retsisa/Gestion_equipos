@@ -6,6 +6,7 @@ from controllers.auth_controller import auth_bp
 from controllers.lab_controller import Lab_bp
 from controllers.equipo_controller import equipo_bp
 from controllers.usuario_controller import usuarios_bp
+from controllers.equip_comp_controller import eq_comp_bp
 from views.views import views_bp
 #from flask_migrate import Migrate
 
@@ -21,6 +22,7 @@ app.register_blueprint(Lab_bp)
 app.register_blueprint(equipo_bp)
 app.register_blueprint(usuarios_bp)
 app.register_blueprint(views_bp)
+app.register_blueprint(eq_comp_bp)
 
 # User loader para Flask-Login
 @login_manager.user_loader

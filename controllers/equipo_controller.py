@@ -22,6 +22,7 @@ def create_equipment(panel_id):
     name = request.form.get('name')
     status = request.form.get('status', 'disponible')
     location = request.form.get('location')
+    sistemaOP=request.form.get('so')
     user_id=request.form.get('user_id')
     
     if status not in Equipos.VALID_STATUSES:
@@ -32,9 +33,10 @@ def create_equipment(panel_id):
         user_id=None
     
     equipment = Equipos(
-        nombre=name,
+        nro=name,
         estado=status,
         ubicacion=location,
+        sistema_operativo=sistemaOP,
         laboratorio_id=panel_id,
         usuario_id=user_id
     )
@@ -51,8 +53,9 @@ def create_equipment(panel_id):
 def edit_equipment(equipment_id):
     equipment = Equipos.query.get_or_404(equipment_id)
     
-    equipment.nombre = request.form.get('name')
+    equipment.nro = request.form.get('name')
     equipment.estado = request.form.get('status')
+    equipment.sistema_operativo=request.form.get('so')
     equipment.ubicacion = request.form.get('location')
     
     if equipment.estado not in Equipos.VALID_STATUSES:
@@ -93,8 +96,9 @@ def get_equipment(equipment_id):
         
     return jsonify({
         'id': equipment.id,
-        'name': equipment.nombre,
+        'name': equipment.nro,
         'status': equipment.estado,
+        'so': equipment.sistema_operativo,
         'location': equipment.ubicacion,
         'user_id': usu.username if usu else None
     })
@@ -107,12 +111,19 @@ def get_qr(equipment_id):
     usu = None
     if equipment.usuario_id:
         usu = Usuarios.query.get(equipment.usuario_id)
+        
+    comp = equipment.equip_comp[0] if equipment.equip_comp else None
     
     datos = f"""
-    Nombre: {equipment.nombre}
+    nro: {equipment.nro}
     Estado: {equipment.estado}
+    Sistema Operativo:{equipment.sistema_operativo}
     Ubicación: {equipment.ubicacion}
-    Usuario: {usu.username if usu != None else 'Sin Usuario'}
+    Usuario: {usu.username if usu else 'Sin Usuario'}
+    ---- Componentes -----
+    Ram: {comp.ram if comp else 'Sin asignar'}
+    Disco Duro: {comp.hd if comp else 'Sin asignar'}
+    modelo: {comp.modelo if comp else 'Sin asignar'}
     """
     
     qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -131,7 +142,7 @@ def get_qr(equipment_id):
     return jsonify({
         'qr_image': f"data:image/png;base64,{qr_base64}",
         'mensaje': "QR generado con éxito",
-        'nombre_archivo': f"qr_{equipment.nombre}.png"
+        'nombre_archivo': f"qr_{equipment.nro}.png"
     })
 
 '''def generar_qr():
@@ -177,12 +188,18 @@ def get_qr(equipment_id):
 def guardar_qr(equipment_id):
     equipment = Equipos.query.get_or_404(equipment_id)
     usu = Usuarios.query.get(equipment.usuario_id) if equipment.usuario_id else None
-
+    comp = equipment.equip_comp[0] if equipment.equip_comp else None
+    
     datos = f"""
-    Nombre: {equipment.nombre}
+    nro: {equipment.nro}
     Estado: {equipment.estado}
+    Sistema Operativo:{equipment.sistema_operativo}
     Ubicación: {equipment.ubicacion}
     Usuario: {usu.username if usu else 'Sin Usuario'}
+    ---- Componentes -----
+    Ram: {comp.ram if comp else 'Sin asignar'}
+    Disco Duro: {comp.hd if comp else 'Sin asignar'}
+    modelo: {comp.modelo if comp else 'Sin asignar'}
     """
 
     qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -199,7 +216,7 @@ def guardar_qr(equipment_id):
         buffer,
         mimetype='image/png',
         as_attachment=True,
-        download_name=f"qr_{equipment.nombre}.png"
+        download_name=f"qr_{equipment.nro}.png"
     )
     
 def generar_qr_base64(texto):
@@ -280,7 +297,7 @@ def generar_reporte_pdf():
             img = Image.open(qr_file)'''
 
             pdf.drawString(50, y, f"ID: {eq.id}")
-            nombre_text = f"Nombre: {eq.nombre}"
+            nombre_text = f"Nro: {eq.nro}"
             lineas_nombre = wrap_text(nombre_text, max_width=120)
 
             for linea in lineas_nombre:
@@ -293,6 +310,13 @@ def generar_reporte_pdf():
 
             for linea in lineas_ubicacion:
                 pdf.drawString(290, y, linea)
+                y -= 12
+                
+            SO_text = f"S.O.: {eq.sistema_operativo}"
+            lineas_SO=wrap_text(SO_text,max_width=250)
+                
+            for linea in lineas_SO:
+                pdf.drawString(410, y, linea)
                 y -= 12
 
             pdf.drawString(50, y-15, f"Usuario: {usuario}")
@@ -360,7 +384,7 @@ def generar_pdf():
 
     return send_file(pdf_file, as_attachment=True, download_name="reporte.pdf", mimetype='application/pdf')
     #return redirect(url_for('laboratorio.dashboard'))
-    
+
 @equipo_bp.route('/equipo/editor')
 @login_required
 @role_required('admin', 'profesor', 'tecnico')

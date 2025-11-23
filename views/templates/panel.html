@@ -7,6 +7,7 @@
     <div>
         <h2><i class="fas fa-laptop-code"></i> {{ panel.nombre }}</h2>
         <p class="text-muted">{{ panel.descripcion or 'Sin descripción' }}</p>
+        <p class="card-text text-muted"><i class="fas fa-map-marker-alt"></i> {{ panel.ubicacion}}</p>
     </div>
     <div>
         <a href="{{ url_for('laboratorio.dashboard') }}" class="btn btn-secondary">
@@ -24,9 +25,10 @@
     <table class="table table-striped table-hover">
         <thead class="table-dark">
             <tr>
-                <th>Nombre</th>
+                <th>Nro</th>
                 <th>Estado</th>
                 <th>Ubicación</th>
+                <th>Sistema Operativo</th>
                 <th>Usuario</th>
                 {% if current_user.rol in ['admin', 'profesor', 'tecnico'] %}
                 <th>Acciones</th>
@@ -36,24 +38,29 @@
         <tbody>
             {% for equipment in panel.equipos %}
             <tr>
-                <td><i class="fas fa-desktop"></i> {{ equipment.nombre }}</td>
+                <td><i class="fas fa-desktop"></i> {{ equipment.nro }}</td>
                 <td>
                     {% if equipment.estado == 'disponible' %}
                         <span class="badge bg-success">Disponible</span>
                     {% elif equipment.estado == 'usado' %}
-                        <span class="badge bg-warning">Usado</span>
+                        <span class="badge bg-warning">En Uso</span>
+                    {% elif equipment.estado == 'mantenimiento' %}
+                        <span class="badge bg-primary">En Mantenimiento</span>
                     {% else %}
-                        <span class="badge bg-danger">Dañado</span>
+                        <span class="badge bg-danger">Baja</span>
                     {% endif %}
                 </td>
                 <td><i class="fas fa-map-marker-alt"></i> {{ equipment.ubicacion }}</td>
+                <td><i class="fas fa-map-marker-alt"></i> {{ equipment.sistema_operativo }}</td>
                 <td>
                     {% if equipment.estado == 'disponible' %}
                         <small class="text-muted">Sin usuario</small>
                     {% elif equipment.estado == 'usado' %}
                         <small>Por: {{ equipment.usuario.username if equipment.usuario else 'Desconocido' }}</small>
-                    {% elif equipment.estado == 'dañado' %}
+                    {% elif equipment.estado == 'mantenimiento' %}
                         <small>Técnico: {{ equipment.usuario.username if equipment.usuario else 'Sin asignar' }}</small>
+                    {% else %}
+                        <small class="text-muted">Sin usuario</small>
                     {% endif %}
                 </td>                
                 {% if current_user.rol in ['admin', 'profesor', 'tecnico'] %}
@@ -78,7 +85,7 @@
             </tr>
             {% else %}
             <tr>
-                <td colspan="5" class="text-center text-muted">No hay equipos registrados</td>
+                <td colspan="6" class="text-center text-muted">No hay equipos registrados</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -96,20 +103,25 @@
             <form method="POST" action="{{ url_for('equipo.create_equipment', panel_id=panel.id) }}">
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="name" class="form-label">Nombre</label>
+                        <label for="name" class="form-label">Nro</label>
                         <input type="text" class="form-control" id="name" name="name" placeholder="PC-1" required>
                     </div>
                     <div class="mb-3">
                         <label for="status" class="form-label">Estado</label>
                         <select class="form-control" id="status" name="status" required>
                             <option value="disponible">Disponible</option>
-                            <option value="usado">Usado</option>
-                            <option value="dañado">Dañado</option>
+                            <option value="usado">En Uso</option>
+                            <option value="mantenimiento">Mantenimiento</option>
+                            <option value="baja">Baja</option>
                         </select>
                     </div>
                     <div class="mb-3">
                         <label for="location" class="form-label">Ubicación</label>
                         <input type="text" class="form-control" id="location" name="location" placeholder="Sala 101" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="so" class="form-label">Sistema Operativo</label>
+                        <input type="text" class="form-control" id="so" name="so" placeholder="Windows 11" required>
                     </div>
                     <div class="mb-3">
                         <label for="user_id" class="form-label">Usuario</label>
@@ -140,20 +152,25 @@
             <form method="POST" id="editEquipmentForm">
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="edit_name" class="form-label">Nombre</label>
+                        <label for="edit_name" class="form-label">Nro</label>
                         <input type="text" class="form-control" id="edit_name" name="name" required>
                     </div>
                     <div class="mb-3">
                         <label for="edit_status" class="form-label">Estado</label>
                         <select class="form-control" id="edit_status" name="status" required>
                             <option value="disponible">Disponible</option>
-                            <option value="usado">Usado</option>
-                            <option value="dañado">Dañado</option>
+                            <option value="usado">En Uso</option>
+                            <option value="mantenimiento">Mantenimiento</option>
+                            <option value="baja">Baja</option>
                         </select>
                     </div>
                     <div class="mb-3">
                         <label for="edit_location" class="form-label">Ubicación</label>
                         <input type="text" class="form-control" id="edit_location" name="location" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_so" class="form-label">Sistema Operativo</label>
+                        <input type="text" class="form-control" id="edit_so" name="so" placeholder="Windows 11" required>
                     </div>
                     <div class="mb-3">
                         <label for="edit_user_id" class="form-label">Usuario</label>

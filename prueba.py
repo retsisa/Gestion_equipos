@@ -1,9 +1,10 @@
 import sqlite3
+from werkzeug.security import generate_password_hash
 conn=sqlite3.connect("Python-SQLite/Gestion_Equipos/instance/Gestion_equipos.db")
 
 cursor=conn.cursor()
 
-dat=cursor.execute("SELECT * FROM equipos").fetchall()
+dat=cursor.execute("SELECT * FROM usuarios").fetchall()
 print(dat)
 
 # Reemplaza 'usuarios' con el nombre de tu tabla
@@ -11,6 +12,25 @@ columnas = cursor.execute("PRAGMA table_info(equipos);").fetchall()
 
 for columna in columnas:
     print(f"Nombre: {columna[1]}, Tipo: {columna[2]}, Es PK: {columna[5]}")
+
+# Usuarios con sus roles
+'''usuarios = [
+    ("Admin1", "1234", "admin"),
+    ("Profesor1", "1234", "profesor"),
+    ("Estudiante1", "1234", "estudiante"),
+    ("Tecnico1", "1234", "tecnico")
+]
+
+# Insertar usuarios con hash
+for username, password, rol in usuarios:
+    cursor.execute("INSERT INTO usuarios (username, password, rol) VALUES (?, ?, ?)",
+                   (username, generate_password_hash(password), rol))
+
+conn.commit()'''
+conn.close()
+
+print("Usuarios insertados correctamente.")
+
 
 conn.close()
 '''

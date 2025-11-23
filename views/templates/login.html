@@ -2,8 +2,55 @@
 
 {% block title %}Login{% endblock %}
 
-{% block content %}
-<div class="row justify-content-center mt-5">
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+{% endblock %}
+
+{% block content_wrapper %}
+<div class="login-page">
+    <div class="background-lights"></div>
+    <div class="neumorphic-card">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            {% if category == 'login' %}
+              <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+      {% endwith %}      
+
+        <h1 class="card-title">Acceso</h1>
+        <p class="subtitle">Verificación de credenciales.</p>
+        
+        <form method="POST" class="login-form">
+            
+            <div class="input-field">
+                <i class="material-icons">fingerprint</i>
+                <input type="text" id="username" name="username" required placeholder="ID de Usuario">
+            </div>
+            
+            <div class="input-field">
+                <i class="material-icons">vpn_key</i>
+                <input type="password" id="password" name="password" required placeholder="Contraseña de Acceso">
+            </div>
+            
+            <button type="submit" class="neumorphic-button">
+                Ingresar
+            </button>
+            
+            <div class="footer-links">
+                <a href="#" class="link">Recuperar Acceso</a>
+            </div>
+        </form>
+    </div>
+</div>
+<!--div class="row justify-content-center mt-5">
     <div class="col-md-4">
         <div class="card shadow">
             <div class="card-body">
@@ -26,5 +73,5 @@
             </div>
         </div>
     </div>
-</div>
+</div-->
 {% endblock %}
